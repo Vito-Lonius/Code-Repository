@@ -31,6 +31,8 @@ The backend is built using the **Gin** framework to construct RESTful APIs, oper
 | Git Library | go-git | Pure Go implementation, supports in-memory operations, no need to install Git binary on server |
 | Object Storage | MinIO | S3 protocol compatible, used to store large file chunks and Office converted PDFs |
 | Task Queue | Asynq | High-performance task queue based on Redis, handling code quality analysis and file compression |
+| Containerization | Docker | Unified runtime environment, solve the problem of "works on my machine" and isolate applications from dependencies |
+| Orchestration Tool | Docker Compose | One-click startup of backend dependency service stack (DB, cache, object storage, SonarQube) through single configuration file (docker-compose.yml) |
 
 </center>
 
@@ -63,7 +65,21 @@ The backend is built using the **Gin** framework to construct RESTful APIs, oper
     - `POST /api/v1/repos` : Create repository.
     - `GET /api/v1/repos/:id/tree` : Get left-side directory tree.
     - `POST /api/v1/files/upload` : Trigger chunked upload.
-    - `POST /api/v1/analysis/trigger` : Manually trigger SonarQube analysis.
+  # **1_5. Containerization and Deployment Design**
+
+To improve development efficiency and ensure deployment consistency, the system comprehensively adopts Docker for container management.
+
+- **Local Development Environment (Development)**
+    - Use `docker-compose.yml` to uniformly deploy infrastructure dependencies, including PostgreSQL, Redis, MinIO, as well as SonarQube and its built-in database.
+    - Gin service and frontend project can run directly on the host machine during local development for hot reload and code debugging, while communicating with dependent components in Docker containers through network ports.
+
+- **Production Deployment Environment (Production)**
+    - **Backend Application Image**: Write `Dockerfile` based on lightweight `golang:alpine` image for multi-stage build, ultimately generating small-sized runtime image containing only compiled binary files.
+    - **Frontend Application Image**: Use Node.js image for packaging, and copy build artifacts to Nginx image to provide static resource service and reverse proxy.
+    - **Unified Network**: All services run under the same Docker Bridge network, perform internal DNS resolution through container names (e.g., `postgres`, `redis`, `api-server`), ensure external access cannot directly access core databases, improve system security.
+
+| 3 | Introduce Docker containerization scheme and deployment design | Vito Lonius | 2026/04/03 |
+##  - `POST /api/v1/analysis/trigger` : Manually trigger SonarQube analysis.
 
 ## **2. Frontend Technology Implementation**
 
@@ -76,5 +92,6 @@ The backend is built using the **Gin** framework to construct RESTful APIs, oper
 |:---:|---|:---:|:---:|
 | 1 | Document Creation | Vito Lonius | 2026/04/03 |
 | 2 | Improve backend technology implementation | Vito Lonius | 2026/04/03 |
+| 3 | Introduction of Docker containerization solutions and deployment design | Vito Lonius | 2026/04/03 |
 
 </center>

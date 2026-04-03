@@ -32,7 +32,6 @@ The platform uses a frontend-backend separation architecture, the backend offers
 ### **2_1. Functional requirements**
 
 <center>
-Table 1 Function Module Description
 
 | **Function Module** | **Function** | **Description** | **Priority** |
 |:---:|---|---|:---:|
@@ -72,7 +71,6 @@ Table 1 Function Module Description
 **Git Management**
 
 <center>
-Table 2 Git Management Function Module Description
 
 | **Function Module** | **Function** | **Description** | **Priority** |
 |:---:|---|---|:---:|
