@@ -91,6 +91,25 @@ The platform uses a frontend-backend separation architecture, the backend offers
 
 ### **2_2. Interface requirements**
 
+The frontend interface should follow the design principles of "modern, responsive, and highly available" to ensure a good interactive experience across different screen resolutions. The following are the core interface requirements:
+
+<center>
+
+|           **Page/View**            | **Key Interface Elements**                                   | **Interaction Description**                                  | **Priority** |
+| :--------------------------------: | ------------------------------------------------------------ | ------------------------------------------------------------ | :----------: |
+|    **Login/Registration Page**     | Form, validation prompts, toggle buttons                     | Clean, centered card design; supports Enter key for quick submission; real-time form and field-level error validation. |     High     |
+|           **Dashboard**            | Repository list cards, search/filter bar, new button, dynamic timeline | Displays an overview of user-owned repositories; supports quick filtering by name; sidebar shows recent collaborator dynamics or system notifications. |     High     |
+|   **New Repository Modal/Page**    | Repository name input, visibility radio buttons, description text area | Real-time validation of repository name duplication; clear icons and descriptions for "Public" and "Private" options. |     High     |
+| **Repository Home (Code Browser)** | Sidebar directory tree, file list, breadcrumb navigation, Readme rendering area, latest Commit bar | Left directory tree supports collapse/expand; right main area shows current directory contents; bottom automatically renders `README.md` file content. |     High     |
+|     **File Upload Component**      | Drag-and-drop dropzone, progress bar list, status icons (queued/uploading/completed/failed) | Global or local drag mask; large file uploads show real-time progress bars, percentages, uploaded size, and estimated remaining time; supports canceling uploads. |     High     |
+|       **File Preview View**        | Top action bar (download/delete/fullscreen), main preview area | **Code/Text**: Line numbers and syntax highlighting; **Image**: Supports drag to pan and scroll wheel to zoom; **PDF**: Built-in pagination controls; **Audio/Video**: Standard player UI. |     High     |
+| **Code Quality Panel (SonarQube)** | Donut charts/progress bars, status badges (Pass/Fail), metrics statistic cards | Repository home displays a simplified quality gate badge; clicking enters a detail page showing trend charts for Bugs, Smells, coverage, etc. |    Medium    |
+|  **Branch & Commit History Page**  | Branch dropdown switcher, timeline list, Hash tags           | List commits in reverse chronological order; clearly displays author avatar, commit message, timestamp, and corresponding Hash value. |     High     |
+|    **Merge Request (MR) Page**     | Diff view (Side-by-side / Inline), comment area, merge control area | Diff code highlights added/deleted lines with green/red backgrounds; bottom merge button is dynamically enabled/disabled (locked) based on SonarQube quality gate status. |     High     |
+|    **Repository Settings Page**    | Tabbed sidebar, danger zone (red-bordered)                   | Tabbed display for "Basic Info", "Collaborator Management", "Branch Protection", and "Advanced (Delete Repository)" to prevent accidental operations. |    Medium    |
+
+</center>
+
 ## **3. High-Level Design**
 
 ## **4. Database Design**
