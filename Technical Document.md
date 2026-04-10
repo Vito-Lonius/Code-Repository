@@ -8,6 +8,7 @@
     - [1_3. Core Function Implementation Plan](#1_3-core-function-implementation-plan)
     - [1_4. API Module Design](#1_4-api-module-design)
 - [2. Frontend Technology Implementation](#2-frontend-technology-implementation)
+    - [2_1. ](#2_1-frontend-technology-stack-selection)
 
 ---
 
@@ -65,7 +66,8 @@ The backend is built using the **Gin** framework to construct RESTful APIs, oper
     - `POST /api/v1/repos` : Create repository.
     - `GET /api/v1/repos/:id/tree` : Get left-side directory tree.
     - `POST /api/v1/files/upload` : Trigger chunked upload.
-  # **1_5. Containerization and Deployment Design**
+
+### **1_5. Containerization and Deployment Design**
 
 To improve development efficiency and ensure deployment consistency, the system comprehensively adopts Docker for container management.
 

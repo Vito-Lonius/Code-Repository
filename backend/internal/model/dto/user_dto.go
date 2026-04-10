@@ -6,6 +6,7 @@ type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8,max=32"`
 	Nickname string `json:"nickname" binding:"omitempty,min=1,max=100"`
+	Username string `json:"username" binding:"omitempty,min=1,max=100"`
 }
 
 // LoginRequest 登录请求
