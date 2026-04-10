@@ -124,9 +124,6 @@ Code-Repository/
     ├── configs/
     │   ├── config.yaml                # Configuration file (database, Redis, MinIO, SonarQube credentials)
     │   └── sonar-scanner.properties   # SonarQube scanner base configuration
-    ├── deployments/                   # Deployment-related configurations
-    │   ├── docker-compose.yml         # Define DB, Redis, MinIO, SonarQube service stack
-    │   └── Dockerfile                 # Backend multi-stage build Dockerfile
     ├── internal/                      # Private application code, prevent external project imports
     │   ├── api/                       # Interface layer (Gin Handlers)
     │   │   ├── v1/                    # API version control
@@ -148,6 +145,9 @@ Code-Repository/
     ├── go.mod                         # Go dependency management
     ├── go.sum
     └── .gitignore
+└── deployments/                   # Deployment-related configurations
+    │   ├── docker-compose.yml         # Define DB, Redis, MinIO, SonarQube service stack
+    │   └── Dockerfile                 # Backend multi-stage build Dockerfile
 ```
 
 ## **4. Database Design**

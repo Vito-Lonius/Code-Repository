@@ -114,9 +114,6 @@ Code-Repository/
     ├── configs/
     │   ├── config.yaml                # 配置文件（数据库、Redis、MinIO、SonarQube 凭据）
     │   └── sonar-scanner.properties   # SonarQube 扫描器基础配置
-    ├── deployments/                   # 部署相关配置
-    │   ├── docker-compose.yml         # 定义 DB, Redis, MinIO, SonarQube 服务栈
-    │   └── Dockerfile                 # 后端多阶段构建 Dockerfile
     ├── internal/                      # 私有应用程序代码，防止被外部项目导入
     │   ├── api/                       # 接口层 (Gin Handlers)
     │   │   ├── v1/                    # API 版本控制
@@ -138,6 +135,9 @@ Code-Repository/
     ├── go.mod                         # Go 依赖管理
     ├── go.sum
     └── .gitignore
+└── deployments/                   # 部署相关配置
+    │   ├── docker-compose.yml         # 定义 DB, Redis, MinIO, SonarQube 服务栈
+    │   └── Dockerfile                 # 后端多阶段构建 Dockerfile
 ```
 
 ## **4. 数据库设计**

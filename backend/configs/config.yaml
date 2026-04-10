@@ -1,0 +1,51 @@
+# 系统基础配置
+server:
+  port: 8080
+  mode: "debug" # 开发模式：debug, 生产模式：release
+
+# JWT 鉴权配置
+jwt:
+  secret: "your-256-bit-secret-key-here" # 请在生产环境更换为复杂的随机字符串
+  expire_hours: 24
+
+# PostgreSQL 数据库配置
+# 注意：本地开发且 Gin 在宿主机运行，请使用 localhost
+database:
+  driver: "postgres"
+  host: "postgres" # Docker Compose 中服务名称
+  port: 5432
+  user: "user"
+  password: "password"
+  dbname: "code_repository"
+  ssl_mode: "disable"
+  max_idle_conns: 10
+  max_open_conns: 100
+
+# Redis 配置 (用于 Asynq 任务队列与缓存)
+redis:
+  host: "redis"
+  port: 6379
+  password: ""
+  db: 0
+
+# MinIO 对象存储配置
+minio:
+  endpoint: "minio:9000"
+  access_key: "admin"
+  secret_key: "password123"
+  use_ssl: false
+  bucket_name: "code-repo-storage"
+  temp_bucket: "upload-chunks" # 用于存放分块上传的切片
+
+# Git 存储配置
+git:
+  root_path: "./data/repositories"
+  default_branch: "main"
+
+# SonarQube 集成配置
+sonarqube:
+  server_url: "http://sonarqube:9000"
+
+# 异步任务配置 (Asynq)
+worker:
+  concurrency: 5

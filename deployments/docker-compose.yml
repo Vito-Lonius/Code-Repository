@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: m.daocloud.io/docker.io/library/postgres:15-alpine
+    container_name: code-repo-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: code_repository
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - backend-net
+
+  redis:
+    image: m.daocloud.io/docker.io/library/redis:7-alpine
+    container_name: code-repo-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - backend-net
+
+  minio:
+    image: minio/minio
+    container_name: code-repo-minio
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9005:9000" # 修改宿主机映射端口为 9005，避免与 SonarQube 的 9000 冲突
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    networks:
+      - backend-net
+
+  sonar-db:
+    image: postgres:15-alpine
+    container_name: sonar-db
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar_password
+      POSTGRES_DB: sonarqube
+    volumes:
+      - sonar_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-net
+
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: code-repo-sonarqube
+    depends_on:
+      - sonar-db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonarqube
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar_password
+    ports:
+      - "9000:9000"
+    # 添加系统限制优化，防止 Elasticsearch 启动失败
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - backend-net
+
+  api-server:
+    build:
+      context: ../
+      dockerfile: deployments/Dockerfile
+    container_name: code-repo-api
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_ENV=docker
+    volumes:
+      # 修改建议：直接挂载目录更稳妥，或者确保宿主机文件 ../backend/configs/config.yaml 确实存在
+      - ../backend/configs:/root/configs:ro 
+      - ./storage/repositories:/data/repositories
+    networks:
+      - backend-net
+    restart: on-failure  # 报错后自动重启，直到连接上 MinIO
+
+networks:
+  backend-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  sonar_db_data:

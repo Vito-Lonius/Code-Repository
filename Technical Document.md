@@ -14,7 +14,7 @@
 
 ## **1. Backend Technology Implementation**
 
-- **Language**: Go 1.26.1
+- **Language**: Go 1.23.0
 
 ### **1_1. System Architecture Overview**
 The backend is built using the **Gin** framework to construct RESTful APIs, operating on underlying storage directly through the **go-git** library. Since it involves large file processing and external tool integration (SonarQube), the system adopts an asynchronous task queue to handle time-consuming operations.
