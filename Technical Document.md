@@ -83,6 +83,48 @@ To improve development efficiency and ensure deployment consistency, the system 
 
 ## **2. Frontend Technology Implementation**
 
+- **Language**: TypeScript 
+- **Package Manager**: pnpm / npm
+
+### **2_1. Frontend Technology Stack Selection**
+
+<center>
+
+|    **Component**     |     **Recommended Technology**     | **Rationale**                                                |
+| :------------------: | :--------------------------------: | ------------------------------------------------------------ |
+|    Core Framework    | React 18 / Vue 3 (Composition API) | Thriving community ecosystem; component-based development model greatly improves code reusability and maintainability. (Note: Choose either based on team familiarity) |
+|      Build Tool      |                Vite                | Provides extremely fast cold starts and Hot Module Replacement (HMR), significantly enhancing the frontend development experience. |
+| UI Component Library |     Ant Design / Element Plus      | Provides comprehensive enterprise-level components like tables, tree controls, modals, and progress bars to accelerate UI development. |
+|   State Management   |   Zustand (React) / Pinia (Vue)    | Lightweight state management, used for global storage of user login status, JWT Tokens, and global theme configurations. |
+|       Routing        |     React Router / Vue Router      | Supports nested routing and route guards, used to implement page access control and authentication interception. |
+|   Styling Solution   |            Tailwind CSS            | Utility-first CSS framework, facilitating the rapid writing of highly customized responsive layouts. |
+|   Network Requests   |               Axios                | Combined with request/response interceptors to uniformly handle JWT injection, Token expiration refresh, and global error prompts. |
+
+</center>
+
+### **2_2. Core Function Frontend Implementation Plan**
+
+- **Large File Chunked Upload and Resumable Transfer**
+    - **File Slicing**: Use the HTML5 `File.slice()` API to cut large files into fixed-size chunks (e.g., 5MB) on the browser side.
+    - **Hash Calculation**: Use the `SparkMD5` library combined with a `Web Worker` to calculate the overall file MD5 or SHA-256 Hash in a background thread, avoiding blocking the main thread and causing page lag.
+    - **Concurrency and Retry**: Use `Promise.all` to control the number of concurrent upload requests (e.g., max 3-5), and implement automatic retry logic for failed chunks.
+    - **Progress Calculation**: Listen to Axios's `onUploadProgress` event combined with the number of uploaded chunks to calculate and update the total progress bar in real-time.
+
+- **Online Preview of Complex File Types**
+    - **Code/Text Preview**: Integrate `Monaco Editor` (the core editor of VS Code) and set it to read-only mode to achieve syntax highlighting and line number display with a near-native IDE experience.
+    - **Markdown Rendering**: Use `marked.js` to convert Markdown to HTML, paired with `DOMPurify` to filter XSS attacks.
+    - **PDF Preview**: Integrate `pdf.js` to achieve pure frontend PDF file parsing and paginated rendering, providing zoom and jump functions.
+    - **Diff Comparison**: For Commit records and PR differences, integrate `diff2html` or Monaco's Diff mode to visually display code additions, deletions, and modifications.
+
+- **Performance Optimization for Extremely Large Directory Trees**
+    - **Virtual Scrolling**: Since some underlying repositories may contain thousands of files, the left directory tree and file lists must use virtualization techniques (such as `react-window` or `vue-virtual-scroller`) to render only the DOM nodes within the visible area, avoiding memory overflow and rendering lag.
+    - **Lazy Loading**: The directory tree initially loads only the top-level structure; network requests are initiated to fetch subdirectory data only when the user clicks to expand a folder.
+
+### **2_3. Frontend-Backend Interaction Design**
+
+- **Authentication Interception Mechanism**: The frontend configures an interceptor in the Axios instance to attach the JWT stored in `localStorage` or `sessionStorage` to the HTTP Header (`Authorization: Bearer <token>`). When the backend returns `401 Unauthorized`, it automatically redirects to the login page.
+- **Long Connections and Real-time Notifications (Optional)**: For time-consuming asynchronous tasks like SonarQube code quality analysis, the frontend can use `SSE (Server-Sent Events)` or Polling mechanisms to query the backend for analysis progress, updating the progress bar or displaying the final gate result on the UI in real-time.
+
 ---
 
 <center>
