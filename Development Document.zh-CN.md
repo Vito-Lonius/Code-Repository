@@ -7,6 +7,7 @@
     - [2_1. 功能需求](#2_1-功能需求)
     - [2_2. 界面需求](#2_2-界面需求)
 - [3. 概要设计](#3-概要设计)
+    - [3_1. 目录架构](#3_1-目录架构)
 - [4. 数据库设计](#4-数据库设计)
 
 ---
@@ -88,6 +89,43 @@
 
 ## **3. 概要设计**
 
+### **3_1. 目录架构**
+
+```bash
+Code-Repository/
+└── backend/
+    ├── cmd/
+    │   └── server/
+    │       └── main.go                # 程序入口：初始化配置、数据库连接及启动 Gin 服务
+    ├── configs/
+    │   ├── config.yaml                # 配置文件（数据库、Redis、MinIO、SonarQube 凭据）
+    │   └── sonar-scanner.properties   # SonarQube 扫描器基础配置
+    ├── deployments/                   # 部署相关配置
+    │   ├── docker-compose.yml         # 定义 DB, Redis, MinIO, SonarQube 服务栈
+    │   └── Dockerfile                 # 后端多阶段构建 Dockerfile
+    ├── internal/                      # 私有应用程序代码，防止被外部项目导入
+    │   ├── api/                       # 接口层 (Gin Handlers)
+    │   │   ├── v1/                    # API 版本控制
+    │   │   └── middleware/            # 中间件（JWT 验证、权限检查）
+    │   ├── service/                   # 业务逻辑层 (Business Logic)
+    │   ├── repository/                # 数据访问层 (DAO)
+    │   │   ├── db/                    # PostgreSQL 操作 (使用 GORM 或 pgx)
+    │   │   ├── cache/                 # Redis 操作 (JWT 黑名单、上传状态)
+    │   │   └── storage/               # MinIO 操作 (S3 协议对接)
+    │   ├── model/                     # 数据模型
+    │   │   ├── entity/                # 对应数据库表的结构体 (User, Repo, File)
+    │   │   └── dto/                   # 请求/响应的 Data Transfer Objects
+    │   └── worker/                    # 异步任务处理 (Asynq)
+    │       ├── tasks.go               # 定义任务类型（文件合并、质量分析）
+    │       └── processors.go          # 任务的具体执行逻辑
+    ├── pkg/                           # 可复用的工具库
+    │   ├── hash/                      # 哈希计算工具 (SHA-256)
+    │   └── utils/                     # 通用工具（时间格式化、JSON 封装）
+    ├── go.mod                         # Go 依赖管理
+    ├── go.sum
+    └── .gitignore
+```
+
 ## **4. 数据库设计**
 
 ---
@@ -101,5 +139,6 @@
 | 2 | 完善功能需求 | 牛茂润 | 2026/04/01 |
 | 3 | 完善项目概述和功能需求 | 牛茂润 | 2026/04/02 |
 | 4 | 添加 Git 需求 | 牛茂润 | 2026/04/03 |
+| 5 | 添加后端目录架构 | 牛茂润 | 2026/04/03 |
 
 </center>

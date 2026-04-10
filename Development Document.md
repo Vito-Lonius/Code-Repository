@@ -7,6 +7,7 @@
     - [2_1. Functional requirements](#2_1-functional-requirements)
     - [2_2. Interface requirements](#2_2-interface-requirements)
 - [3. High-Level Design](#3-high-level-design)
+    - [3_1. 3_1. Directory Architecture](#3_1-directory-architecture)
 - [4. Database Design](#4-database-design)
 
 ---
@@ -93,6 +94,43 @@ The platform uses a frontend-backend separation architecture, the backend offers
 
 ## **3. High-Level Design**
 
+### **3_1. Directory Architecture**
+
+```bash
+Code-Repository/
+└── backend/
+    ├── cmd/
+    │   └── server/
+    │       └── main.go                # Program entry point: initialize configuration, database connection and start Gin service
+    ├── configs/
+    │   ├── config.yaml                # Configuration file (database, Redis, MinIO, SonarQube credentials)
+    │   └── sonar-scanner.properties   # SonarQube scanner base configuration
+    ├── deployments/                   # Deployment-related configurations
+    │   ├── docker-compose.yml         # Define DB, Redis, MinIO, SonarQube service stack
+    │   └── Dockerfile                 # Backend multi-stage build Dockerfile
+    ├── internal/                      # Private application code, prevent external project imports
+    │   ├── api/                       # Interface layer (Gin Handlers)
+    │   │   ├── v1/                    # API version control
+    │   │   └── middleware/            # Middleware (JWT verification, permission check)
+    │   ├── service/                   # Business logic layer
+    │   ├── repository/                # Data access layer (DAO)
+    │   │   ├── db/                    # PostgreSQL operations (using GORM or pgx)
+    │   │   ├── cache/                 # Redis operations (JWT blacklist, upload status)
+    │   │   └── storage/               # MinIO operations (S3 protocol integration)
+    │   ├── model/                     # Data models
+    │   │   ├── entity/                # Structs corresponding to database tables (User, Repo, File)
+    │   │   └── dto/                   # Request/response Data Transfer Objects
+    │   └── worker/                    # Asynchronous task processing (Asynq)
+    │       ├── tasks.go               # Define task types (file merge, quality analysis)
+    │       └── processors.go          # Concrete execution logic for tasks
+    ├── pkg/                           # Reusable utility libraries
+    │   ├── hash/                      # Hash calculation tools (SHA-256)
+    │   └── utils/                     # Common utilities (time formatting, JSON wrapping)
+    ├── go.mod                         # Go dependency management
+    ├── go.sum
+    └── .gitignore
+```
+
 ## **4. Database Design**
 
 ---
@@ -106,5 +144,6 @@ The platform uses a frontend-backend separation architecture, the backend offers
 | 2 | Improve functional requirements | Vito Lonius | 2026/04/01 |
 | 3 | Improve project overview and functional requirements | Vito Lonius | 2026/04/02 |
 | 4 | Add Git management requirements | Vito Lonius | 2026/04/03 |
+| 5 | Add backend directory structure | Vito Lonius | 2026/04/03 |
 
 </center>
