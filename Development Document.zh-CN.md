@@ -107,7 +107,7 @@
 
 ```bash
 Code-Repository/
-└── backend/
+├── backend/
     ├── cmd/
     │   └── server/
     │       └── main.go                # 程序入口：初始化配置、数据库连接及启动 Gin 服务
@@ -136,8 +136,8 @@ Code-Repository/
     ├── go.sum
     └── .gitignore
 └── deployments/                   # 部署相关配置
-    │   ├── docker-compose.yml         # 定义 DB, Redis, MinIO, SonarQube 服务栈
-    │   └── Dockerfile                 # 后端多阶段构建 Dockerfile
+    ├── docker-compose.yml         # 定义 DB, Redis, MinIO, SonarQube 服务栈
+    └── Dockerfile                 # 后端多阶段构建 Dockerfile
 ```
 
 ## **4. 数据库设计**
