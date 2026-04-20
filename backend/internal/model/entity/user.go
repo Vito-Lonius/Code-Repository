@@ -15,8 +15,8 @@ type User struct {
 	Nickname     string         `gorm:"size:100;not null;default:''" json:"nickname"`
 	Username     string         `gorm:"size:100;not null;default:''" json:"username"`
 	AvatarURL    string         `gorm:"column:avatar_url;size:500;default:''" json:"avatar_url"`
-	Role         string         `gorm:"size:20;not null;default:'user'" json:"role"`     // user/admin
-	Status       string         `gorm:"size:20;not null;default:'active'" json:"status"` // active/banned
+	Role         string         `gorm:"size:20;not null;default:user" json:"role"`     // user/admin
+	Status       string         `gorm:"size:20;not null;default:active" json:"status"` // active/banned
 	JwtVersion   int            `gorm:"column:jwt_version;default:0;not null" json:"-"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`

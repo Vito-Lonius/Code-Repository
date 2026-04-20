@@ -1,63 +1,117 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	v1 "code-repo/internal/api/v1" // 引入你的 API 层
+	v1 "code-repo/internal/api/v1"
+	"code-repo/internal/model/entity"
 	"code-repo/internal/repository/db"
 	"code-repo/internal/repository/storage"
 	"code-repo/internal/service"
 	"code-repo/pkg/utils"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func main() {
-	// 1. 确定配置文件路径
+	// 1. 加载配置
 	configPath := "configs/config.yaml"
 	if os.Getenv("APP_ENV") == "docker" {
 		configPath = "/root/configs/config.yaml"
 	}
-
-	// 2. 加载配置
-	log.Println("正在启动代码托管平台后端服务...")
 	utils.LoadConfig(configPath)
 
-	// 3. 初始化基础设施
-	// 注意：确保 db.InitPostgres 会初始化全局变量 db.DB 或返回实例
-	db.InitPostgres(utils.Config.Database)
-	storage.InitMinio(utils.Config.Minio)
+	// 2. 构造数据库连接 DSN
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&TimeZone=Asia/Shanghai",
+		utils.Config.Database.User,
+		utils.Config.Database.Password,
+		utils.Config.Database.Host,
+		utils.Config.Database.Port,
+		utils.Config.Database.DBName,
+		utils.Config.Database.SSLMode,
+	)
 
-	// TODO: 初始化 Redis
+	// 3. 初始化数据库连接（带重试逻辑，解决 Docker 容器启动顺序问题）
+	var dbConn *gorm.DB
+	var err error
+	for i := 0; i < 5; i++ {
+		dbConn, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			break
+		}
+		log.Printf("正在等待数据库就绪 (%d/5)...", i+1)
+		time.Sleep(5 * time.Second)
+	}
+	if err != nil {
+		log.Fatalf("数据库连接最终失败: %v", err)
+	}
 
-	// 4. 依赖注入 (Dependency Injection)
-	// 假设 db.DB 是你在 InitPostgres 中初始化的全局 *gorm.DB 实例
-	userRepo := db.NewUserRepository(db.DB)
+	// 4. 自动迁移数据库表结构
+	// 包含 User 和 Repository 实体
+	dbConn.AutoMigrate(&entity.User{}, &entity.Repository{})
+
+	// 5. 初始化其他基础设施
+	storage.InitMinio(utils.Config.Minio) //
+
+	// 6. 依赖注入 (Dependency Injection)
+
+	// --- User 模块 ---
+	userRepo := db.NewUserRepository(dbConn)
 	userSvc := service.NewUserService(userRepo)
 	userHandler := v1.NewUserHandler(userSvc)
 
-	// 5. 启动 Gin HTTP 服务并注册路由
+	// --- Repository 模块 ---
+	repoDB := db.NewRepoRepository(dbConn)
+	repoSvc := service.NewRepoService(repoDB)
+	repoHandler := v1.NewRepoHandler(repoSvc)
+
+	// 7. 注册路由
 	r := gin.Default()
 
-	// 健康检查
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "pong"})
-	})
-
-	// 注册 API 路由
 	apiV1 := r.Group("/api/v1")
 	{
+		// 用户相关接口
 		apiV1.POST("/register", userHandler.Register)
 		apiV1.POST("/login", userHandler.Login)
-		// 注意：GetProfile 需要 AuthMiddleware 保护，建议后续引入后加上
-		// authGroup := apiV1.Group("/")
-		// authGroup.Use(middleware.AuthMiddleware())
-		// authGroup.GET("/user/profile", userHandler.GetProfile)
+
+		// 仓库相关接口
+		apiV1.POST("/repos", repoHandler.Create)       // 创建仓库
+		apiV1.GET("/repos/:id", repoHandler.GetDetail) // 获取仓库详情
+		apiV1.DELETE("/repos/:id", repoHandler.Delete) // 删除仓库
 	}
 
-	log.Printf("基础设施初始化完毕！服务正运行在端口: %s\n", utils.Config.Server.Port)
-	if err := r.Run(":" + utils.Config.Server.Port); err != nil {
-		log.Fatalf("服务启动失败: %v", err)
+	// 8. 启动服务与优雅关机
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", utils.Config.Server.Port),
+		Handler: r,
 	}
+
+	go func() {
+		log.Printf("代码托管平台后端服务运行在端口: %d", utils.Config.Server.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Listen: %s\n", err)
+		}
+	}()
+
+	// 等待中断信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("正在关闭服务...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("服务强制关闭:", err)
+	}
+	log.Println("服务已安全退出")
 }
