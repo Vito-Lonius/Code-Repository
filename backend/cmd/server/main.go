@@ -11,6 +11,7 @@ import (
 	"time"
 
 	v1 "code-repo/internal/api/v1"
+	"code-repo/internal/api/middleware"
 	"code-repo/internal/model/entity"
 	"code-repo/internal/repository/db"
 	"code-repo/internal/repository/storage"
@@ -56,8 +57,7 @@ func main() {
 	}
 
 	// 4. 自动迁移数据库表结构
-	// 包含 User 和 Repository 实体
-	dbConn.AutoMigrate(&entity.User{}, &entity.Repository{})
+	dbConn.AutoMigrate(&entity.User{}, &entity.Repository{}, &entity.File{}, &entity.UploadTask{})
 
 	// 5. 初始化其他基础设施
 	storage.InitMinio(utils.Config.Minio) //
@@ -74,6 +74,19 @@ func main() {
 	repoSvc := service.NewRepoService(repoDB)
 	repoHandler := v1.NewRepoHandler(repoSvc)
 
+	// --- File 模块 ---
+	fileRepo := db.NewFileRepository(dbConn)
+	uploadTaskRepo := db.NewUploadTaskRepository(dbConn)
+	fileSvc := service.NewFileService(fileRepo, uploadTaskRepo, repoDB)
+	fileHandler := v1.NewFileHandler(fileSvc)
+
+	// --- Preview 模块 ---
+	previewSvc := service.NewPreviewService(fileRepo, repoDB)
+	previewHandler := v1.NewPreviewHandler(previewSvc)
+
+	// --- 中间件 ---
+	authMW := middleware.AuthMiddleware()
+
 	// 7. 注册路由
 	r := gin.Default()
 
@@ -84,9 +97,36 @@ func main() {
 		apiV1.POST("/login", userHandler.Login)
 
 		// 仓库相关接口
-		apiV1.POST("/repos", repoHandler.Create)       // 创建仓库
-		apiV1.GET("/repos/:id", repoHandler.GetDetail) // 获取仓库详情
-		apiV1.DELETE("/repos/:id", repoHandler.Delete) // 删除仓库
+		apiV1.POST("/repos", repoHandler.Create)
+		apiV1.GET("/repos/:id", repoHandler.GetDetail)
+		apiV1.DELETE("/repos/:id", repoHandler.Delete)
+
+		// 文件相关接口（需要认证）
+		fileGroup := apiV1.Group("")
+		fileGroup.Use(authMW)
+		{
+			fileGroup.POST("/files/upload", fileHandler.UploadSimple)
+			fileGroup.POST("/files/upload/init", fileHandler.UploadInit)
+			fileGroup.POST("/files/upload/chunk", fileHandler.UploadChunk)
+			fileGroup.POST("/files/upload/complete", fileHandler.UploadComplete)
+			fileGroup.GET("/files/:id", fileHandler.GetFileDetail)
+			fileGroup.GET("/files/:id/download", fileHandler.DownloadFile)
+			fileGroup.DELETE("/files/:id", fileHandler.DeleteFile)
+			fileGroup.GET("/files", fileHandler.ListFiles)
+			fileGroup.POST("/files/dir", fileHandler.CreateDir)
+			fileGroup.PUT("/files/:id/rename", fileHandler.RenameFile)
+			fileGroup.PUT("/files/:id/move", fileHandler.MoveFile)
+
+			// 预览相关接口（需要认证）
+			fileGroup.GET("/preview/:id", previewHandler.PreviewFile)
+			fileGroup.GET("/preview/:id/info", previewHandler.GetPreviewInfo)
+			fileGroup.GET("/preview/:id/raw", previewHandler.GetRawFile)
+			fileGroup.GET("/preview/:id/image", previewHandler.PreviewImage)
+			fileGroup.GET("/preview/:id/media", previewHandler.PreviewMedia)
+			fileGroup.GET("/preview/:id/pdf", previewHandler.PreviewPDF)
+			fileGroup.GET("/repos/:repo_id/tree", previewHandler.GetDirectoryTree)
+			fileGroup.GET("/repos/:repo_id/dir", previewHandler.ListDir)
+		}
 	}
 
 	// 8. 启动服务与优雅关机
