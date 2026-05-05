@@ -213,3 +213,78 @@ func TestClassifyFile(t *testing.T) {
 		})
 	}
 }
+
+func TestPreviewService_GetRawFile(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFileRepo := db.NewMockFileRepository(ctrl)
+	mockRepoRepo := db.NewMockRepoRepository(ctrl)
+
+	svc := NewPreviewService(mockFileRepo, mockRepoRepo)
+
+	t.Run("文件不存在应报错", func(t *testing.T) {
+		mockFileRepo.EXPECT().GetByID(uint64(999)).Return(nil, gorm.ErrRecordNotFound)
+
+		_, err := svc.GetRawFile(context.Background(), 999)
+		assert.Error(t, err)
+		assert.Equal(t, "文件不存在", err.Error())
+	})
+
+	t.Run("目录不能获取原始内容", func(t *testing.T) {
+		mockFileRepo.EXPECT().GetByID(uint64(1)).Return(&entity.File{
+			ID: 1, FileName: "src", Path: "/src", IsDir: true,
+		}, nil)
+
+		_, err := svc.GetRawFile(context.Background(), 1)
+		assert.Error(t, err)
+		assert.Equal(t, "不能获取目录的原始内容", err.Error())
+	})
+
+	t.Run("ObjectKey为空应报错", func(t *testing.T) {
+		mockFileRepo.EXPECT().GetByID(uint64(1)).Return(&entity.File{
+			ID: 1, FileName: "empty.txt", Path: "/empty.txt", IsDir: false, ObjectKey: "",
+		}, nil)
+
+		_, err := svc.GetRawFile(context.Background(), 1)
+		assert.Error(t, err)
+		assert.Equal(t, "文件存储键为空", err.Error())
+	})
+}
+
+func TestPreviewService_PreviewFile_TextSizeLimit(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFileRepo := db.NewMockFileRepository(ctrl)
+	mockRepoRepo := db.NewMockRepoRepository(ctrl)
+
+	svc := NewPreviewService(mockFileRepo, mockRepoRepo)
+
+	t.Run("超大文本文件不返回内容", func(t *testing.T) {
+		mockFileRepo.EXPECT().GetByID(uint64(1)).Return(&entity.File{
+			ID: 1, FileName: "huge.go", Path: "/huge.go",
+			IsDir: false, MimeType: "text/x-go", FileSize: 10 * 1024 * 1024,
+			ObjectKey: "repos/1/huge.go", Status: "completed",
+		}, nil)
+
+		resp, err := svc.PreviewFile(context.Background(), 1)
+		assert.NoError(t, err)
+		assert.Equal(t, "code", resp.FileType)
+		assert.Equal(t, "go", resp.Language)
+		assert.Empty(t, resp.Content)
+	})
+
+	t.Run("非文本文件不返回内容", func(t *testing.T) {
+		mockFileRepo.EXPECT().GetByID(uint64(2)).Return(&entity.File{
+			ID: 2, FileName: "photo.png", Path: "/photo.png",
+			IsDir: false, MimeType: "image/png", FileSize: 102400,
+			ObjectKey: "repos/1/photo.png", Status: "completed",
+		}, nil)
+
+		resp, err := svc.PreviewFile(context.Background(), 2)
+		assert.NoError(t, err)
+		assert.Equal(t, "image", resp.FileType)
+		assert.Empty(t, resp.Content)
+	})
+}
