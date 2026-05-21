@@ -1,0 +1,9 @@
+# 华为云码道/CodeArts Doer 相关文件
+.codeartsdoer/
+.arts
+.codebaseignore
+
+# VS Code 本地配置文件
+.vscode/
+settings.json
+nul
